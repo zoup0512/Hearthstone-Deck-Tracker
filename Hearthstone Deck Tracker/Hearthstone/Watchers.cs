@@ -19,6 +19,7 @@ using Hearthstone_Deck_Tracker.Hearthstone.RelatedCardsSystem;
 using Hearthstone_Deck_Tracker.HsReplay;
 using Hearthstone_Deck_Tracker.Importing;
 using Hearthstone_Deck_Tracker.Utility.Arena;
+using Hearthstone_Deck_Tracker.Utility.Battlegrounds;
 using Hearthstone_Deck_Tracker.Utility.Extensions;
 using Hearthstone_Deck_Tracker.Utility.Logging;
 using Hearthstone_Deck_Tracker.Utility.ValueMoments.Actions;
@@ -353,6 +354,7 @@ namespace Hearthstone_Deck_Tracker.Hearthstone
 				var boardCards = args.Opposing?.BoardCards ?? new List<BoardCard>();
 				var mousedOverSlot = args.Opposing?.MousedOverSlot ?? -1;
 				Core.Overlay.BattlegroundsMinionPinningViewModel.OnShopChange(boardCards, mousedOverSlot);
+				BattlegroundsShopAdvisor.OnShopChange(boardCards);
 			}
 
 			Core.Overlay.OnPlayZoneStateChanged(args);

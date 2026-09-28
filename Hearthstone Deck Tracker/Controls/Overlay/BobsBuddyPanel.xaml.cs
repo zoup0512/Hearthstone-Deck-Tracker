@@ -736,13 +736,53 @@ namespace Hearthstone_Deck_Tracker.Controls.Overlay
 			Dispatcher.BeginInvoke(new Action(() =>
 			{
 				PositioningHintText.Text = text;
-				PositioningHintPanel.Visibility = Visibility.Visible;
+				PositioningHintText.Visibility = Visibility.Visible;
+				UpdatePositioningHintPanelVisibility();
 			}));
+		}
+
+		internal void HidePositioningLine()
+		{
+			Dispatcher.BeginInvoke(new Action(() =>
+			{
+				PositioningHintText.Visibility = Visibility.Collapsed;
+				UpdatePositioningHintPanelVisibility();
+			}));
+		}
+
+		internal void ShowThreatAssessment(string? text)
+		{
+			Dispatcher.BeginInvoke(new Action(() =>
+			{
+				if(string.IsNullOrEmpty(text))
+				{
+					ThreatText.Visibility = Visibility.Collapsed;
+				}
+				else
+				{
+					ThreatText.Text = text;
+					ThreatText.Visibility = Visibility.Visible;
+				}
+				UpdatePositioningHintPanelVisibility();
+			}));
+		}
+
+		private void UpdatePositioningHintPanelVisibility()
+		{
+			PositioningHintPanel.Visibility =
+				PositioningHintText.Visibility == Visibility.Visible || ThreatText.Visibility == Visibility.Visible
+					? Visibility.Visible
+					: Visibility.Collapsed;
 		}
 
 		internal void HidePositioningHint()
 		{
-			Dispatcher.BeginInvoke(new Action(() => PositioningHintPanel.Visibility = Visibility.Collapsed));
+			Dispatcher.BeginInvoke(new Action(() =>
+			{
+				PositioningHintText.Visibility = Visibility.Collapsed;
+				ThreatText.Visibility = Visibility.Collapsed;
+				PositioningHintPanel.Visibility = Visibility.Collapsed;
+			}));
 		}
 	}
 }

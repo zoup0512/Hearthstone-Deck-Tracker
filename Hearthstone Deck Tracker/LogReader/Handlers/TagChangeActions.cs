@@ -12,6 +12,7 @@ using Hearthstone_Deck_Tracker.Hearthstone;
 using Hearthstone_Deck_Tracker.Hearthstone.Entities;
 using Hearthstone_Deck_Tracker.LogReader.Interfaces;
 using Hearthstone_Deck_Tracker.Utility.Analytics;
+using Hearthstone_Deck_Tracker.Utility.Battlegrounds;
 using Hearthstone_Deck_Tracker.Utility.Extensions;
 using Hearthstone_Deck_Tracker.Utility.Logging;
 using static HearthDb.CardIds;
@@ -202,6 +203,7 @@ namespace Hearthstone_Deck_Tracker.LogReader.Handlers
 			{
 				game.IsBattlegroundsCombatPhase = true;
 				Core.Overlay.BgsMinionPinningShop.Visibility = Visibility.Collapsed;
+				BattlegroundsShopAdvisor.Reset();
 				if(game.IsBattlegroundsSoloMatch && game.CurrentGameStats != null)
 				{
 					// A "real" combat should always start on the GameEntity TURN after a shopping phase (GameEntity
@@ -232,6 +234,7 @@ namespace Hearthstone_Deck_Tracker.LogReader.Handlers
 			{
 				game.IsBattlegroundsCombatPhase = true;
 				Core.Overlay.BgsMinionPinningShop.Visibility = Visibility.Collapsed;
+				BattlegroundsShopAdvisor.Reset();
 				if(!game.IsBattlegroundsDuosMatch || game.DuosWasOpponentHeroModified)
 				{
 					game.SnapshotBattlegroundsBoardState();

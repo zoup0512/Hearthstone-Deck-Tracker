@@ -522,6 +522,7 @@ namespace Hearthstone_Deck_Tracker
 					Core.Overlay.BattlegroundsMinionsVM.OnTrinkets(Core.Game.Player.Trinkets.Select(x => x.Card.Id));
 					Core.Overlay.BattlegroundsInspirationViewModel.OnShoppingStart();
 					Core.Overlay.BgsMinionPinningShop.Visibility = Visibility.Visible;
+					BattlegroundsShopAdvisor.OnShoppingStart();
 				}
 				switch(Config.Instance.TurnStartAction)
 				{

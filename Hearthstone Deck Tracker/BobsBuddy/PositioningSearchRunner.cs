@@ -23,10 +23,25 @@ namespace Hearthstone_Deck_Tracker.BobsBuddy
 	}
 
 	/// <summary>
+	/// How dangerous the upcoming combat is for the current arrangement, expressed in
+	/// baseline win/tie/loss rates plus how much uniform stats the player's board would
+	/// need to reach a coin-flip.
+	/// </summary>
+	internal class ThreatAssessment
+	{
+		public double WinRate;
+		public double TieRate;
+		public double LossRate;
+		public double AvgDamageTakenOnLoss;
+		public int StatsNeededForCoinFlip;   // uniform +X/+X, -1 = unknown, 0 = already favored
+		public double StatsNeededWinRate;
+	}
+
+	/// <summary>
 	/// During the Battlegrounds shopping phase, searches for the board arrangement that
-	/// maximizes the simulated combat result against the upcoming opponent, and surfaces
-	/// a hint on the BobsBuddy panel. The player's board is still editable during shopping,
-	/// which is what makes this the right moment for a placement recommendation.
+	/// maximizes the simulated combat result against the upcoming opponent, and assesses
+	/// how threatening the next combat is. Both run on the same snapshot: the player's
+	/// board is still editable during shopping, which is what makes this the right moment.
 	/// </summary>
 	internal static class PositioningSearchRunner
 	{
@@ -51,6 +66,14 @@ namespace Hearthstone_Deck_Tracker.BobsBuddy
 		// With ~1200 confirmations the stderr of a win rate is ~1.3%, so a difference
 		// below this margin cannot be distinguished from simulation noise.
 		private const double ConfirmMargin = 0.035;
+
+		// Threat sweep: uniform +X/+X applied to the whole board, in steps, until the
+		// simulated result reaches a coin flip.
+		private const int ThreatEvalIterations = 250;
+		private const int ThreatEvalTimeBudgetMs = 400;
+		private const int ThreatBuffStep = 2;
+		private const int ThreatMaxBuff = 12;
+		private const double FavoredThreshold = 0.55;
 
 		private static readonly object Lock = new object();
 		private static CancellationTokenSource? _cts;
@@ -109,9 +132,7 @@ namespace Hearthstone_Deck_Tracker.BobsBuddy
 					return;
 
 				var lastFingerprint = BoardFingerprint(input!);
-				var hint = await SearchAsync(input!, ct);
-				if(hint != null)
-					DisplayHint(hint);
+				await RunSearch(input!, ct);
 
 				// The player keeps buying, selling and reordering during shopping; re-run
 				// whenever the relevant state actually changed.
@@ -125,9 +146,7 @@ namespace Hearthstone_Deck_Tracker.BobsBuddy
 					if(fingerprint == lastFingerprint)
 						continue;
 					lastFingerprint = fingerprint;
-					hint = await SearchAsync(input!, ct);
-					if(hint != null)
-						DisplayHint(hint);
+					await RunSearch(input!, ct);
 				}
 			}
 			catch(OperationCanceledException)
@@ -137,6 +156,16 @@ namespace Hearthstone_Deck_Tracker.BobsBuddy
 			{
 				Log.Error(e);
 			}
+		}
+
+		private static async Task RunSearch(Input input, CancellationToken ct)
+		{
+			var (hint, threat) = await SearchAsync(input, ct);
+			Core.Overlay.BobsBuddyDisplay.ShowThreatAssessment(threat != null ? FormatThreat(threat) : null);
+			if(hint != null)
+				Core.Overlay.BobsBuddyDisplay.ShowPositioningHint(FormatHint(hint));
+			else
+				Core.Overlay.BobsBuddyDisplay.HidePositioningLine();
 		}
 
 		private static bool IsValid(Input? input) =>
@@ -162,7 +191,7 @@ namespace Hearthstone_Deck_Tracker.BobsBuddy
 			}
 		}
 
-		private static async Task<PositioningHint?> SearchAsync(Input input, CancellationToken ct)
+		private static async Task<(PositioningHint? Hint, ThreatAssessment? Threat)> SearchAsync(Input input, CancellationToken ct)
 		{
 			var deadline = Stopwatch.StartNew();
 			var side = input.Player.Side;
@@ -171,6 +200,12 @@ namespace Hearthstone_Deck_Tracker.BobsBuddy
 			// the simulator clones per iteration, so the minions themselves are never touched.
 			var original = side.ToList();
 			var originalOrder = Enumerable.Range(0, count).ToList();
+
+			// Baseline run doubles as the input for the threat assessment.
+			var baselineOutput = await Simulate(input, ConfirmIterations, ConfirmTimeBudgetMs);
+			if(baselineOutput == null)
+				return (null, null);
+			var threat = await AssessThreatAsync(input, baselineOutput, original, ct);
 
 			async Task<double> Evaluate(IReadOnlyList<int> order)
 			{
@@ -232,34 +267,121 @@ namespace Hearthstone_Deck_Tracker.BobsBuddy
 				}
 			}
 
-			if(bestOrder.SequenceEqual(Enumerable.Range(0, count)))
-				return null; // the current arrangement is already the best known
+			if(bestOrder.SequenceEqual(originalOrder))
+				return (null, threat);
 
 			// Re-confirm baseline and best with larger samples so simulation noise cannot
 			// surface a "better" arrangement that is actually equivalent or worse.
 			Apply(side, bestOrder);
 			var bestOutput = await Simulate(input, ConfirmIterations, ConfirmTimeBudgetMs);
 			Apply(side, originalOrder);
-			var currentOutput = await Simulate(input, ConfirmIterations, ConfirmTimeBudgetMs);
-			if(bestOutput == null || currentOutput == null)
-				return null;
+			var currentOutput = baselineOutput;
+			if(bestOutput == null)
+				return (null, threat);
 			if(Score(bestOutput) <= Score(currentOutput) + ConfirmMargin)
-				return null;
+				return (null, threat);
 
-			return new PositioningHint
+			return (new PositioningHint
 			{
 				Names = bestOrder.Select(i => GetMinionName(original[i])).ToList(),
 				BestWinRate = bestOutput.winRate,
 				BestTieRate = bestOutput.tieRate,
 				CurrentWinRate = currentOutput.winRate,
 				CurrentTieRate = currentOutput.tieRate,
-			};
+			}, threat);
 		}
 
 		/// <summary>
-		/// Rearranges side so that side[k] becomes the minion currently at order[k].
-		/// Works on the list of references only; the minions themselves are untouched.
+		/// Sweeps uniform +X/+X buffs over the player's board until the simulated combat
+		/// reaches a coin flip, reporting the smallest X that gets there. The minions belong
+		/// to a throwaway snapshot, so mutating their base stats is safe as long as the
+		/// original values are restored afterwards.
 		/// </summary>
+		private static async Task<ThreatAssessment?> AssessThreatAsync(
+			Input input, Output baseline, List<BobsBuddyMinion> minions, CancellationToken ct)
+		{
+			var threat = new ThreatAssessment
+			{
+				WinRate = baseline.winRate,
+				TieRate = baseline.tieRate,
+				LossRate = baseline.lossRate,
+				AvgDamageTakenOnLoss = baseline.damageResults?.Where(x => x < 0).DefaultIfEmpty(0).Average() ?? 0,
+			};
+			var originalAttack = minions.Select(m => m.baseAttack).ToArray();
+			var originalHealth = minions.Select(m => m.baseHealth).ToArray();
+			try
+			{
+				if(Score(baseline) >= FavoredThreshold)
+				{
+					threat.StatsNeededForCoinFlip = 0;
+					return threat;
+				}
+
+				for(var buff = ThreatBuffStep; buff <= ThreatMaxBuff; buff += ThreatBuffStep)
+				{
+					ct.ThrowIfCancellationRequested();
+					for(var i = 0; i < minions.Count; i++)
+					{
+						minions[i].baseAttack = originalAttack[i] + buff;
+						minions[i].baseHealth = originalHealth[i] + buff;
+					}
+					var output = await Simulate(input, ThreatEvalIterations, ThreatEvalTimeBudgetMs);
+					if(output == null)
+						break;
+					if(Score(output) >= 0.5)
+					{
+						threat.StatsNeededForCoinFlip = buff;
+						threat.StatsNeededWinRate = output.winRate;
+						break;
+					}
+				}
+				return threat;
+			}
+			finally
+			{
+				// The sweep shares its input with the positioning search that runs next;
+				// left-over hypothetical buffs would corrupt every subsequent evaluation.
+				// Cancellation can interrupt mid-sweep, hence finally.
+				for(var i = 0; i < minions.Count; i++)
+				{
+					minions[i].baseAttack = originalAttack[i];
+					minions[i].baseHealth = originalHealth[i];
+				}
+			}
+		}
+
+		private static string FormatThreat(ThreatAssessment threat)
+		{
+			var line = string.Format(
+				Loc("BobsBuddyThreat_Line", "Threat: W {0}% / T {1}% / L {2}%"),
+				Percent(threat.WinRate), Percent(threat.TieRate), Percent(threat.LossRate));
+			if(threat.AvgDamageTakenOnLoss < -0.5)
+				line += " ｜ " + string.Format(
+					Loc("BobsBuddyThreat_AvgDamageTaken", "avg {0} dmg taken on loss"),
+					(-threat.AvgDamageTakenOnLoss).ToString("0.#"));
+			if(threat.StatsNeededForCoinFlip == 0)
+				line += " ｜ " + Loc("BobsBuddyThreat_Favored", "favored");
+			else if(threat.StatsNeededForCoinFlip > 0)
+				line += " ｜ " + string.Format(
+					Loc("BobsBuddyThreat_NeedsBuff", "+{0}/+{1} → W {2}%"),
+					threat.StatsNeededForCoinFlip, threat.StatsNeededForCoinFlip, Percent(threat.StatsNeededWinRate));
+			else
+				line += " ｜ " + string.Format(
+					Loc("BobsBuddyThreat_Outmatched", "+{0}/+{0} still unlikely to win"), ThreatMaxBuff);
+			return line;
+		}
+
+		private static string FormatHint(PositioningHint hint)
+		{
+			var order = string.Join(" → ", hint.Names);
+			return string.Format(
+				Loc("BobsBuddyPositioningHint_Order", "Suggested placement: {0}"), order) + "\n" +
+				string.Format(
+					Loc("BobsBuddyPositioningHint_Comparison", "Win {0} / Tie {1} (current: Win {2} / Tie {3})"),
+					Percent(hint.BestWinRate), Percent(hint.BestTieRate),
+					Percent(hint.CurrentWinRate), Percent(hint.CurrentTieRate));
+		}
+
 		private static void Apply(List<BobsBuddyMinion> side, IReadOnlyList<int> order)
 		{
 			var temp = new List<BobsBuddyMinion>(order.Count);
@@ -307,16 +429,6 @@ namespace Hearthstone_Deck_Tracker.BobsBuddy
 			}
 
 			return Recurse(0);
-		}
-
-		private static void DisplayHint(PositioningHint hint)
-		{
-			var order = string.Join(" → ", hint.Names);
-			var text = string.Format(Loc("BobsBuddyPositioningHint_Order", "Suggested placement: {0}"), order) + "\n" +
-				string.Format(Loc("BobsBuddyPositioningHint_Comparison", "Win {0} / Tie {1} (current: Win {2} / Tie {3})"),
-					Percent(hint.BestWinRate), Percent(hint.BestTieRate),
-					Percent(hint.CurrentWinRate), Percent(hint.CurrentTieRate));
-			Core.Overlay.BobsBuddyDisplay.ShowPositioningHint(text);
 		}
 
 		// The Strings resx files are copied from the HDT-Localization repo at build time,

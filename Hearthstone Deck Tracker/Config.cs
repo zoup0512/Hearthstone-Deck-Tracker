@@ -860,6 +860,9 @@ namespace Hearthstone_Deck_Tracker
 		[DefaultValue(true)]
 		public bool ShowBobsBuddyPositioningHint = true;
 
+		[DefaultValue(true)]
+		public bool ShowBattlegroundsShopAdvisor = true;
+
 		[DefaultValue(false)]
 		public bool AlwaysShowAverageDamage = false;
 

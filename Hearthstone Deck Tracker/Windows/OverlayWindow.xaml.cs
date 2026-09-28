@@ -48,6 +48,7 @@ using Hearthstone_Deck_Tracker.Controls.Overlay.Battlegrounds.Inspiration;
 using Hearthstone_Deck_Tracker.Controls.Overlay.Battlegrounds.ChinaModule;
 using Hearthstone_Deck_Tracker.Controls.Overlay.Battlegrounds.Guides.Quests;
 using Hearthstone_Deck_Tracker.Controls.Overlay.Battlegrounds.Guides.Trinkets;
+using Hearthstone_Deck_Tracker.Controls.Overlay.Battlegrounds.ShopAdvisor;
 using Hearthstone_Deck_Tracker.Controls.Overlay.Battlegrounds.MinionPinning;
 using Hearthstone_Deck_Tracker.Controls.Overlay.Constructed.Mulligan;
 using Hearthstone_Deck_Tracker.Controls.Overlay.Constructed.Mulligan.V2;
@@ -152,6 +153,8 @@ namespace Hearthstone_Deck_Tracker.Windows
 		public Tier7PreLobbyViewModel Tier7PreLobbyViewModel { get; } = new Tier7PreLobbyViewModel();
 
 		public BattlegroundsMinionPinningViewModel BattlegroundsMinionPinningViewModel { get; } = new BattlegroundsMinionPinningViewModel();
+
+		public BattlegroundsShopAdvisorViewModel BattlegroundsShopAdvisorVM { get; } = new BattlegroundsShopAdvisorViewModel();
 
 		public List<BoardMinionOverlayViewModel> OppBoard { get; } = new List<BoardMinionOverlayViewModel>(MaxBoardSize);
 		public List<BoardMinionOverlayViewModel> PlayerBoard { get; } = new List<BoardMinionOverlayViewModel>(MaxBoardSize);
@@ -1171,6 +1174,7 @@ namespace Hearthstone_Deck_Tracker.Windows
 			// the panel hides itself once the match state says so, only its results are cleared here
 			BobsBuddyDisplay.ResetDisplays();
 			UpdateBobsBuddyPanelVisibility();
+			BattlegroundsShopAdvisor.Reset();
 
 			BattlegroundsInspirationViewModel.Reset();
 			HideBgsInspiration();
