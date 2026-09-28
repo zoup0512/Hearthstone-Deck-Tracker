@@ -240,6 +240,9 @@
                     </Rectangle>
                 </Grid>
             </Border>
+            <Border x:Name="PositioningHintPanel" Background="#1E2A1E" BorderBrush="#3A5A3A" BorderThickness="1" CornerRadius="3" Margin="0,5,0,0" Visibility="Collapsed" MaxWidth="352">
+                <TextBlock x:Name="PositioningHintText" Foreground="#8AC66E" FontSize="13" TextWrapping="Wrap" Margin="10,5"/>
+            </Border>
         </StackPanel>
 
         <Grid Style="{StaticResource SpacerStyle}"/>

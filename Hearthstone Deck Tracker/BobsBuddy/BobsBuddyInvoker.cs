@@ -131,6 +131,26 @@ namespace Hearthstone_Deck_Tracker.BobsBuddy
 			_reconnectCounterAtSnapshot = _reconnectCounter;
 		}
 
+		/// <summary>
+		/// Builds a fresh simulation input from the current game state for the
+		/// shopping-phase positioning search. Uses a throwaway invoker so the
+		/// per-combat instances and their state are not touched.
+		/// </summary>
+		internal static Input? SnapshotForPositioningSearch()
+		{
+			try
+			{
+				var invoker = new BobsBuddyInvoker("positioning_" + Guid.NewGuid());
+				invoker.SnapshotBoardState(Core.Game.GetTurnNumber());
+				return invoker._input;
+			}
+			catch(Exception e)
+			{
+				Log.Error(e);
+				return null;
+			}
+		}
+
 
 		public Output? Output { get; private set; }
 
@@ -201,6 +221,10 @@ namespace Hearthstone_Deck_Tracker.BobsBuddy
 
 			try
 			{
+				// The player's board is locked once combat starts; stop any shopping-phase
+				// positioning search and clear its hint.
+				PositioningSearchRunner.OnCombatStart();
+
 				if(!ShouldRun())
 					return;
 				DebugLog(_instanceKey);
@@ -376,6 +400,7 @@ namespace Hearthstone_Deck_Tracker.BobsBuddy
 
 				if(isGameOver)
 				{
+					PositioningSearchRunner.OnGameOver();
 					if(State != BobsBuddyState.Initial)
 					{
 						DebugLog("Setting UI state to GameOver");
@@ -394,6 +419,12 @@ namespace Hearthstone_Deck_Tracker.BobsBuddy
 				BobsBuddyDisplay.SetLastOutcome(GetLastCombatDamageDealt());
 				BobsBuddyDisplay.SetState(State);
 				ValidateSimulationResultAsync().Forget();
+
+				// While shopping, the board can still be rearranged: search for the best
+				// placement against the upcoming opponent. Duos partial-combat states are
+				// not covered by the search.
+				if(!isGameOver && State == BobsBuddyState.Shopping)
+					PositioningSearchRunner.OnShoppingStart();
 			}
 			catch(Exception e)
 			{
