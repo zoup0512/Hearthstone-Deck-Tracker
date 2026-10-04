@@ -92,6 +92,18 @@ namespace Hearthstone_Deck_Tracker.FlyoutControls.Options.Overlay
 			CheckboxShowResultsDuringCombat.IsChecked = Config.Instance.ShowBobsBuddyDuringCombat;
 			CheckboxShowResultsDuringShopping.IsChecked = Config.Instance.ShowBobsBuddyDuringShopping;
 			CheckboxAlwaysShowAverageDamage.IsChecked = Config.Instance.AlwaysShowAverageDamage;
+			CheckboxShowPositioningHint.IsChecked = Config.Instance.ShowBobsBuddyPositioningHint;
+			CheckboxShowShopAdvisor.IsChecked = Config.Instance.ShowBattlegroundsShopAdvisor;
+
+			// The Strings resx files are overwritten from HDT-Localization at build time,
+			// so keys added only in this fork would render as empty labels; set the
+			// texts from code with an English fallback.
+			if(string.IsNullOrEmpty(LocUtil.Get("Options_Overlay_Battlegrounds_CheckBox_ShowPositioningHint")))
+				CheckboxShowPositioningHint.Content = "Show placement hints during shopping";
+			if(string.IsNullOrEmpty(LocUtil.Get("Options_Overlay_Battlegrounds_CheckBox_ShowShopAdvisor")))
+				CheckboxShowShopAdvisor.Content = "Suggest worth-buying tavern minions";
+			if(string.IsNullOrEmpty(LocUtil.Get("Options_Overlay_Battlegrounds_Label_ShopAdvisor")))
+				GroupBoxShopAdvisor.Header = "SHOP ADVISOR";
 
 			CheckboxShowSessionRecap.IsChecked = Config.Instance.ShowSessionRecap;
 			CheckboxShowMinionsAvailable.IsChecked = Config.Instance.ShowSessionRecapMinionsAvailable;
@@ -533,6 +545,40 @@ namespace Hearthstone_Deck_Tracker.FlyoutControls.Options.Overlay
 				return;
 			Config.Instance.ShowBobsBuddyDuringShopping = false;
 			SaveConfig(true);
+		}
+
+		private void CheckboxShowPositioningHint_Checked(object sender, RoutedEventArgs e)
+		{
+			if(!_initialized)
+				return;
+			Config.Instance.ShowBobsBuddyPositioningHint = true;
+			SaveConfig(true);
+		}
+
+		private void CheckboxShowPositioningHint_Unchecked(object sender, RoutedEventArgs e)
+		{
+			if(!_initialized)
+				return;
+			Config.Instance.ShowBobsBuddyPositioningHint = false;
+			SaveConfig(true);
+			Core.Overlay.BobsBuddyDisplay.HidePositioningHint();
+		}
+
+		private void CheckboxShowShopAdvisor_Checked(object sender, RoutedEventArgs e)
+		{
+			if(!_initialized)
+				return;
+			Config.Instance.ShowBattlegroundsShopAdvisor = true;
+			SaveConfig(true);
+		}
+
+		private void CheckboxShowShopAdvisor_Unchecked(object sender, RoutedEventArgs e)
+		{
+			if(!_initialized)
+				return;
+			Config.Instance.ShowBattlegroundsShopAdvisor = false;
+			SaveConfig(true);
+			BattlegroundsShopAdvisor.Reset();
 		}
 
 		private void CheckboxAlwaysShowAverageDamage_Checked(object sender, RoutedEventArgs e)

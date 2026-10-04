@@ -1,0 +1,43 @@
+﻿<UserControl x:Class="Hearthstone_Deck_Tracker.Controls.Overlay.Battlegrounds.ShopAdvisor.BattlegroundsShopAdvisorPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:lex="http://wpflocalizeextension.codeplex.com"
+             lex:LocalizeDictionary.DesignCulture="en"
+             lex:ResxLocalizationProvider.DefaultAssembly="HearthstoneDeckTracker"
+             lex:ResxLocalizationProvider.DefaultDictionary="Strings"
+             mc:Ignorable="d"
+             d:DesignHeight="120" d:DesignWidth="260">
+    <UserControl.LayoutTransform>
+        <ScaleTransform ScaleX="{Binding Scaling}" ScaleY="{Binding Scaling}" CenterX="0.5" CenterY="0.5"/>
+    </UserControl.LayoutTransform>
+    <Border Background="#D0141617" BorderBrush="#3A5A3A" BorderThickness="1" CornerRadius="4" Padding="10,6"
+            Visibility="{Binding IsVisible}" IsHitTestVisible="False">
+        <StackPanel>
+            <TextBlock Text="{lex:Loc ShopAdvisor_Title}" Foreground="#F0D089" FontSize="13" FontWeight="Bold" Margin="0,0,0,3"/>
+            <ItemsControl ItemsSource="{Binding Recommendations}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock FontSize="12" TextWrapping="Wrap" Margin="0,1" TextAlignment="Left">
+                            <Run Text="{Binding Name, Mode=OneWay}" FontWeight="Bold">
+                                <Run.Style>
+                                    <Style TargetType="Run">
+                                        <Setter Property="Foreground" Value="#8AC66E"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Affordable}" Value="False">
+                                                <Setter Property="Foreground" Value="#8A8A8A"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Run.Style>
+                            </Run>
+                            <Run Text="  "/>
+                            <Run Text="{Binding Reasons, Mode=OneWay}" Foreground="#B0B8BC"/>
+                        </TextBlock>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+    </Border>
+</UserControl>

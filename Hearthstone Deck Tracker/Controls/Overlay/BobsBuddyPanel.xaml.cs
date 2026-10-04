@@ -466,6 +466,7 @@ namespace Hearthstone_Deck_Tracker.Controls.Overlay
 			if(_lastCombatPossibilities != null)
 				_lastCombatPossibilities.Clear();
 			ResetText();
+			HidePositioningHint();
 			PlayerLethalOpacity = SoftLabelOpacity;
 			OpponentLethalOpacity = SoftLabelOpacity;
 			PlayerAverageDamageOpacity = SoftLabelOpacity;
@@ -547,6 +548,7 @@ namespace Hearthstone_Deck_Tracker.Controls.Overlay
 
 			if(state == BobsBuddyState.Combat || state == BobsBuddyState.CombatPartial)
 			{
+				HidePositioningHint();
 				ClearErrorState();
 				ShowResults(Config.Instance.ShowBobsBuddyDuringCombat);
 			}
@@ -723,6 +725,64 @@ namespace Hearthstone_Deck_Tracker.Controls.Overlay
 		{
 			if(Config.Instance.BobsBuddyAverageDamageInfoClosed)
 				AverageDamageInfoVisibility = Visibility.Collapsed;
+		}
+
+		/// <summary>
+		/// Shows the shopping-phase positioning hint produced by PositioningSearchRunner.
+		/// The search runs off the UI thread, so marshal the panel updates.
+		/// </summary>
+		internal void ShowPositioningHint(string text)
+		{
+			Dispatcher.BeginInvoke(new Action(() =>
+			{
+				PositioningHintText.Text = text;
+				PositioningHintText.Visibility = Visibility.Visible;
+				UpdatePositioningHintPanelVisibility();
+			}));
+		}
+
+		internal void HidePositioningLine()
+		{
+			Dispatcher.BeginInvoke(new Action(() =>
+			{
+				PositioningHintText.Visibility = Visibility.Collapsed;
+				UpdatePositioningHintPanelVisibility();
+			}));
+		}
+
+		internal void ShowThreatAssessment(string? text)
+		{
+			Dispatcher.BeginInvoke(new Action(() =>
+			{
+				if(string.IsNullOrEmpty(text))
+				{
+					ThreatText.Visibility = Visibility.Collapsed;
+				}
+				else
+				{
+					ThreatText.Text = text;
+					ThreatText.Visibility = Visibility.Visible;
+				}
+				UpdatePositioningHintPanelVisibility();
+			}));
+		}
+
+		private void UpdatePositioningHintPanelVisibility()
+		{
+			PositioningHintPanel.Visibility =
+				PositioningHintText.Visibility == Visibility.Visible || ThreatText.Visibility == Visibility.Visible
+					? Visibility.Visible
+					: Visibility.Collapsed;
+		}
+
+		internal void HidePositioningHint()
+		{
+			Dispatcher.BeginInvoke(new Action(() =>
+			{
+				PositioningHintText.Visibility = Visibility.Collapsed;
+				ThreatText.Visibility = Visibility.Collapsed;
+				PositioningHintPanel.Visibility = Visibility.Collapsed;
+			}));
 		}
 	}
 }

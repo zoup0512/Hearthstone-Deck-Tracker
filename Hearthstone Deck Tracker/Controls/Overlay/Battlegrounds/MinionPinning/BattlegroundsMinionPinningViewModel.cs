@@ -32,6 +32,12 @@ namespace Hearthstone_Deck_Tracker.Controls.Overlay.Battlegrounds.MinionPinning
 		public int PinnedCount => _pinnedCardIds.Count;
 		public bool HasPins => PinnedCount > 0;
 
+		/// <summary>
+		/// Card ids the Tier7 comps guides currently flag as worth picking. Empty unless
+		/// the recommended-markers feature has populated it.
+		/// </summary>
+		public IReadOnlyCollection<string> GetRecommendedCardIds() => _recommendedCardIds;
+
 		public ObservableCollection<PinnedSlotViewModel> PinnedSlots { get; } = new();
 
 		private const int SlotGroupSize = 5;

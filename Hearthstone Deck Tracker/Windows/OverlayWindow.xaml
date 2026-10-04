@@ -29,6 +29,7 @@
         xmlns:arena="clr-namespace:Hearthstone_Deck_Tracker.Controls.Overlay.Arena"
         xmlns:chinaModule="clr-namespace:Hearthstone_Deck_Tracker.Controls.Overlay.Battlegrounds.ChinaModule"
         xmlns:minionPinning="clr-namespace:Hearthstone_Deck_Tracker.Controls.Overlay.Battlegrounds.MinionPinning"
+        xmlns:shopAdvisor="clr-namespace:Hearthstone_Deck_Tracker.Controls.Overlay.Battlegrounds.ShopAdvisor"
         xmlns:relatedCardsPanel="clr-namespace:Hearthstone_Deck_Tracker.Controls.Overlay.Constructed.RelatedCardsPanel"
         xmlns:tooltips="clr-namespace:Hearthstone_Deck_Tracker.Controls.Tooltips"
         lex:LocalizeDictionary.DesignCulture="en"
@@ -551,6 +552,18 @@
                 >
                     <minionPinning:BattlegroundsMinionPinning x:Name="BattlegroundsMinionPinningControl" VerticalAlignment="Bottom" DataContext="{Binding BattlegroundsMinionPinningViewModel, RelativeSource={RelativeSource AncestorType=windows:OverlayWindow}}" />
                     <minionPinning:BattlegroundsMinionPinningShop x:Name="BgsMinionPinningShop" DataContext="{Binding BattlegroundsMinionPinningViewModel, RelativeSource={RelativeSource AncestorType=windows:OverlayWindow}}"/>
+                </Grid>
+                <!-- Shop advisor: anchored above the tavern row on the right side.
+                     Placement may need tuning after visual verification in game. -->
+                <Grid Name="BgsShopAdvisor"
+                      Canvas.Top="0"
+                      Canvas.Left="0"
+                      Width="{Binding Width, ElementName=CanvasInfo}"
+                      Height="{Binding Height, ElementName=CanvasInfo}"
+                      IsHitTestVisible="False"
+                >
+                    <shopAdvisor:BattlegroundsShopAdvisorPanel HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,170,130"
+                                                               DataContext="{Binding BattlegroundsShopAdvisorVM, RelativeSource={RelativeSource AncestorType=windows:OverlayWindow}}"/>
                 </Grid>
                 <overlay:BattlegroundsTimewarpPanel x:Name="TimewarpNotificationPanel" Visibility="Collapsed" Canvas.Right="0"/>
 

@@ -124,6 +124,21 @@
                           IsEnabled="{Binding IsChecked, ElementName=CheckboxRunCombatSimulations}"
                           Checked="CheckboxAlwaysShowAverageDamage_Checked"
                           Unchecked="CheckboxAlwaysShowAverageDamage_Unchecked" Margin="0,5,0,0" />
+                <CheckBox x:Name="CheckboxShowPositioningHint" Content="{lex:Loc Options_Overlay_Battlegrounds_CheckBox_ShowPositioningHint}"
+                          HorizontalAlignment="Left"
+                          VerticalAlignment="Top"
+                          IsEnabled="{Binding IsChecked, ElementName=CheckboxRunCombatSimulations}"
+                          Checked="CheckboxShowPositioningHint_Checked"
+                          Unchecked="CheckboxShowPositioningHint_Unchecked" Margin="0,5,0,0" />
+            </StackPanel>
+        </GroupBox>
+        <GroupBox x:Name="GroupBoxShopAdvisor" Header="{lex:LocTextUpper Options_Overlay_Battlegrounds_Label_ShopAdvisor}" Margin="5,10,5,5">
+            <StackPanel>
+                <CheckBox x:Name="CheckboxShowShopAdvisor" Content="{lex:Loc Options_Overlay_Battlegrounds_CheckBox_ShowShopAdvisor}"
+                          HorizontalAlignment="Left"
+                          VerticalAlignment="Top"
+                          Checked="CheckboxShowShopAdvisor_Checked"
+                          Unchecked="CheckboxShowShopAdvisor_Unchecked" Margin="0" />
             </StackPanel>
         </GroupBox>
         <GroupBox Header="{lex:Loc Options_Overlay_Battlegrounds_Group_Label}" Margin="5,10,5,5">
