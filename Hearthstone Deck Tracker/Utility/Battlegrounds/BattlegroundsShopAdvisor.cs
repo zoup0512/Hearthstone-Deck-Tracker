@@ -33,6 +33,7 @@ namespace Hearthstone_Deck_Tracker.Utility.Battlegrounds
 		private const int MaxRecommendations = 3;
 
 		private static List<BoardCard>? _lastShopCards;
+		private static DateTime _lastDiagnosticLog = DateTime.MinValue;
 
 		internal static void OnShopChange(List<BoardCard>? shopCards)
 		{
@@ -185,10 +186,16 @@ namespace Hearthstone_Deck_Tracker.Utility.Battlegrounds
 					Name = card.LocalizedName ?? cardId,
 					Reasons = string.Join(" · ", reasons),
 					Affordable = affordable,
+					Score = score,
 				});
 			}
 
 			var top = rows.OrderByDescending(r => r.Score).Take(MaxRecommendations).ToList();
+			if((DateTime.UtcNow - _lastDiagnosticLog).TotalMilliseconds > 2000)
+			{
+				_lastDiagnosticLog = DateTime.UtcNow;
+				Log.Info($"[ShopAdvisor] shopCards={shopCards.Count} scoredRows={rows.Count} visible={top.Count > 0}");
+			}
 			SetVisible(top.Count > 0, top);
 		}
 
