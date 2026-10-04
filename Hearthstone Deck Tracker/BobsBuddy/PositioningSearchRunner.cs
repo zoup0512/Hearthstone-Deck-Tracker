@@ -353,7 +353,8 @@ namespace Hearthstone_Deck_Tracker.BobsBuddy
 		private static string FormatThreat(ThreatAssessment threat)
 		{
 			var line = string.Format(
-				Loc("BobsBuddyThreat_Line", "Threat: W {0}% / T {1}% / L {2}%"),
+				// Percent() already appends "%", so the templates must not repeat it.
+				Loc("BobsBuddyThreat_Line", "Threat: W {0} / T {1} / L {2}"),
 				Percent(threat.WinRate), Percent(threat.TieRate), Percent(threat.LossRate));
 			if(threat.AvgDamageTakenOnLoss < -0.5)
 				line += " ｜ " + string.Format(
@@ -363,7 +364,7 @@ namespace Hearthstone_Deck_Tracker.BobsBuddy
 				line += " ｜ " + Loc("BobsBuddyThreat_Favored", "favored");
 			else if(threat.StatsNeededForCoinFlip > 0)
 				line += " ｜ " + string.Format(
-					Loc("BobsBuddyThreat_NeedsBuff", "+{0}/+{1} → W {2}%"),
+					Loc("BobsBuddyThreat_NeedsBuff", "+{0}/+{1} → W {2}"),
 					threat.StatsNeededForCoinFlip, threat.StatsNeededForCoinFlip, Percent(threat.StatsNeededWinRate));
 			else
 				line += " ｜ " + string.Format(
