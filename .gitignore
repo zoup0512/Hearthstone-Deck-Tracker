@@ -192,3 +192,6 @@ Resources/Tiles/
 
 # Rider config files
 .idea/
+
+# Local release packages (version + build timestamp)
+/*.zip
